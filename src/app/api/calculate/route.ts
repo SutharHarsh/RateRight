@@ -48,7 +48,9 @@ export async function POST(req: Request) {
             (clerkUser.publicMetadata as Record<string, unknown> | undefined)?.plan
           );
 
-        if (!isPremium && calculationCount >= 3) {
+        // The track endpoint increments usage before this API is called.
+        // Block only after the 3rd free calculation has already been consumed.
+        if (!isPremium && calculationCount > 3) {
           return NextResponse.json(
             {
               error: 'Limit reached',
