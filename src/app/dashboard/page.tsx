@@ -1,5 +1,5 @@
 import { getOptionalAuth } from '@/lib/auth';
-import { currentUser } from '@clerk/nextjs/server';
+import { clerkClient } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { DollarSign, Calculator, FileText, TrendingUp, Users, ArrowRight, Sparkles, Activity } from 'lucide-react';
@@ -20,7 +20,14 @@ async function loadDashboardUser(userId: string) {
   });
 
   if (!user) {
-    const clerkUser = await currentUser();
+    let clerkUser;
+    try {
+      const client = await clerkClient();
+      clerkUser = await client.users.getUser(userId);
+    } catch {
+      // Session could not be resolved reliably (often cookie/auth edge cases).
+      return null;
+    }
 
     if (!clerkUser) {
       return null;

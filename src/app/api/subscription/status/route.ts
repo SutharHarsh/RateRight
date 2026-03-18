@@ -7,7 +7,13 @@ export async function GET() {
   const { userId } = await auth();
 
   if (!userId) {
-    return NextResponse.json({ isSignedIn: false, isPremium: false, plan: 'FREE' });
+    return NextResponse.json({
+      isSignedIn: false,
+      isPremium: false,
+      plan: 'FREE',
+      calculationsUsed: 0,
+      calculationsLimit: 3,
+    });
   }
 
   const user = await prisma.user.findUnique({
@@ -51,8 +57,19 @@ export async function GET() {
   }
 
   const isPremium = isPremiumFromDb || isPremiumFromMetadata;
-  const calculationsUsed = typeof metadata.calculationsThisMonth === 'number' ? metadata.calculationsThisMonth : 0;
-  const calculationsLimit = isPremium ? 999999 : 3;
+  const metadataCalculationsUsed =
+    typeof metadata.calculationsThisMonth === 'number' && Number.isFinite(metadata.calculationsThisMonth)
+      ? metadata.calculationsThisMonth
+      : 0;
+  const calculationsUsed =
+    typeof user?.calculationsUsed === 'number' && Number.isFinite(user.calculationsUsed)
+      ? user.calculationsUsed
+      : metadataCalculationsUsed;
+  const freePlanLimit =
+    typeof user?.calculationsLimit === 'number' && Number.isFinite(user.calculationsLimit) && user.calculationsLimit > 0
+      ? user.calculationsLimit
+      : 3;
+  const calculationsLimit = isPremium ? 999999 : freePlanLimit;
 
   return NextResponse.json({
     isSignedIn: true,
